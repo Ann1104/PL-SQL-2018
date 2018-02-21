@@ -1,0 +1,45 @@
+--zad1
+--wyświetlic wydziały z największą aktualnie zatrudnioną liczbą osób
+
+CREATE VIEW wydz_max_osob AS
+select INITCAP(w.nazwa) wydzial, count(id_os) liczba_os
+from wydzialy w join zatrudnienia z on z.id_w=w.id_w
+where z.do is null
+group by INITCAP(w.nazwa)
+order by 2 DESC;
+
+-- nieskorelowana bo naj z czegos
+select wydzial, liczba_os
+from wydz_max_osob
+where liczba_os= (SELECT max(liczba_os) from wydz_max_osob);
+
+--------------------------------------------------------------------------------------------------------
+--zad2
+--Dla kazdej plci wyświetlic osoby o najdłuższym imieniu
+
+CREATE VIEW os_dl_imie1 AS
+select INITCAP(nazwisko)||' '||INITCAP(imie1) osoba, length(imie1) dl_imie1 , plec
+from osoby;
+
+select osoba, dl_imie1, plec
+from os_dl_imie1 o1
+where dl_imie1 IN (SELECT max(dl_imie1) from os_dl_imie1 o2 where o1.plec = o2.plec)
+order by dl_imie1;
+
+--lub (cos zle)
+select INITCAP(nazwisko)||' '||INITCAP(imie1) osoba, length(imie1) dl_imie1 , plec
+from osoby o
+where length(o.imie1)=(SELECT MAX(length(o1.imie1))
+from osoby o1 where o.plec=o1.plec);
+
+--------------------------------------------------------------------------------------------------------
+--zad3
+--wyswietlic te stanowiska na ktore zatrudnione sa obecnie osoby o imieniu zawierajaca litere a
+SELECT s.nazwa stanowiska, count(z.id_os) lb_osob
+FROM osoby o join zatrudnienia z on o.id_os=z.id_os join stanowiska s on z.id_s= s.id_s 
+where UPPER(o.imie1) like '%A%' AND z.do is null
+group by s.nazwa
+having count(z.id_os)>1
+order by 2 ASC;
+
+
