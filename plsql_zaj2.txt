@@ -1,0 +1,134 @@
+--zad1
+--Dla poszczególnych wydziałów wyświetlić średnią z aktualnych pensji przy czym nie wyswietlac wydziałów , 
+--na których ta jest najwieksza
+
+CREATE VIEW v_sr_pensja_wydzial AS
+SELECT w.nazwa as nazwa, ROUND(AVG(z.pensja)) as sr_pensja
+FROM zatrudnienia z JOIN wydzialy w ON z.id_w=w.id_w
+WHERE z.do is null
+GROUP BY w.nazwa;
+
+WITH srednia_wydzialu AS
+(SELECT w.nazwa, ROUND(AVG(z.pensja)) as sr_pensja
+FROM zatrudnienia z JOIN wydzialy w ON z.id_w=w.id_w
+WHERE z.do is null
+GROUP BY w.nazwa)
+
+SELECT sw.nazwa, sw.sr_pensja
+from srednia_wydzialu sw
+where pensja <> (select MAX(sr_pensja) from srednia_wydzialu)
+;
+
+
+SELECT nazwa, srednia
+from srednia_wydzialu
+order by 2 DESC
+MINUS
+SELECT nazwa, srednia from srednia_wydzialu
+where srednia=(select max(srednia) from srednia_wydzialu;
+
+
+
+
+
+
+--zad2'
+--dla poszczegolnych wydzialów wyświetlac srednią pensje poszczególnych wydziałów 
+--na których są dwie najwieksze srednie
+
+select *
+FROM v_sr_pensja_wydzial;
+
+select sw.nazwa, sw.sr_pensja
+from v_sr_pensja_wydzial sw
+MINUS
+select sw.nazwa, sw.sr_pensja
+from v_sr_pensja_wydzial sw
+where sw.sr_pensja = (SELECT MAX(sr_pensja) 
+                      FROM v_sr_pensja_wydzial)
+MINUS
+select sw.nazwa, sw.sr_pensja
+from v_sr_pensja_wydzial sw
+where sw.sr_pensja = (SELECT MAX(sr_pensja) 
+                      FROM v_sr_pensja_wydzial);                     
+                      
+                      
+SELECT sw.nazwa, sw.sr_pensja
+from v_sr_pensja_wydzial sw
+where pensja < (SELECT MAX(sr_pensja) 
+                      FROM v_sr_pensja_wydzial
+                      where pensja < (SELECT MAX(sr_pensja) 
+                      FROM v_sr_pensja_wydzial));
+                      
+
+
+CREATE VIEW srednia_wydzialu AS
+SELECT w.nazwa as nazwa, ROUND(AVG(pensja)) as srednia
+FROM zatrudnienia z JOIN wydzialy w ON z.id_w=w.id_w
+WHERE z.do is null
+GROUP BY w.nazwa;
+
+WITH srednia_pensja2 AS
+(SELECT nazwa, srednia 
+from srednia_wydzialu
+MINUS
+SELECT nazwa, srednia
+from srednia_wydzialu
+where pensja < (SELECT MAX(srednia) 
+                      FROM srednia_wydzialu))
+                      
+SELECT nazwa, srednia
+from srednia_pensja2
+MINUS
+SELECT nazwa, srednia
+from srednia_pensja2
+where pensja < (SELECT MAX(srednia) 
+                      FROM srednia_wydzialu);
+					  
+					  
+					  
+--DO DOMU 
+--TRZEBA WYRZUCIC TRZY WYDZIAŁY
+--WYSWIETLIC OSOBY WRAZ Z DLUGOSCIA IMIENIA/NAZWISKA BEZ OSOBY Z NADLUZSZYM IMIENIEM/NAZWISKIEM A POZNIEJ 0 2 I 3 (NIE TRZEBA WIDOKOW)
+
+
+
+PL/SQL
+
+
+--dziala
+--napisac kod bloku anonimowego w języku pl/skl za pomoca którego z tabeli osoby będzie można wyświetlić 
+--dane osoby o danym nazwisku i imieniu np LIS, Jan, które ostaną podane poprzez zainicjowanie odpowiednich
+--zmiennych pl/sql-owych w sekcji deklaracji bloku przy czym zainicjowane zmienne odpowiadają temu nazwisku i imieniu
+
+
+SET SERVEROUTPUT ON
+
+DECLARE
+  z_id_os osoby.id_os%TYPE;
+  z_nazwisko osoby.nazwisko%TYPE := 'Lis';
+  z_imie1 osoby.imie1%TYPE := 'Jan';
+  --z_imie2 osoby.imie2%TYPE;
+  z_d_ur osoby.d_ur%TYPE;
+  z_plec osoby.plec%TYPE;
+BEGIN
+  SELECT id_os, d_ur, plec--,imie2
+  INTO z_id_os, z_d_ur, z_plec--, z_imie2 
+  FROM osoby o
+  where INITCAP(o.nazwisko)=INITCAP(z_nazwisko) and INITCAP(o.imie1) = INITCAP(z_imie1);
+  
+  DBMS_OUTPUT.PUT_LINE(z_id_os||' '||INITCAP(z_nazwisko)||' '||INITCAP(z_imie1)||' '|| z_d_ur||' '||z_plec);
+END;
+/
+
+
+
+
+
+za tydzien
+
+
+PODTYP UZYTKOWNIKA
+DEKLARACJE ZAKOTWICZONE
+TYP REKORDOWY
+BLOKI Z TRUDNYM SQL-EM
