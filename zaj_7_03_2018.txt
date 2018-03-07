@@ -1,0 +1,70 @@
+--zad1
+--napisać kod bloku anonimowego pl/sql za pomocą którego będzie można wyswietlic dane o osobie, która
+--aktualnie pobiera najwieksza pensję, przy czym płeć tej osoby jest podana poprzez zainicjowanie 
+--w sekcji deklaracji odpowiedniej zmiennej pl/sql. Wykorzystać w deklaracji zmiennej pl/sql deklarację zakotwiczoną
+
+set SERVEROUTPUT ON;
+ 
+ 
+DECLARE
+  z_Imie osoby.imie1%TYPE;
+  z_Nazwisko osoby.nazwisko%TYPE;
+  z_plec osoby.plec%TYPE := 'K';
+  z_DataUr osoby.d_ur%TYPE;
+  z_idOs  osoby.id_os%TYPE;
+  z_pensja zatrudnienia.pensja%TYPE;
+BEGIN
+  SELECT o.imie1, o.nazwisko, o.d_ur, o.id_os, zat.pensja
+  INTO z_Imie, z_Nazwisko, z_DataUr, z_idOs, z_pensja
+  FROM osoby o join zatrudnienia zat on o.id_os=zat.id_os
+  WHERE zat.do IS NULL AND o.plec=z_plec AND zat.pensja=(SELECT max(zat1.pensja)
+                                                        FROM osoby o1 join zatrudnienia zat1 on o1.id_os=zat1.id_os
+                                                        WHERE zat1.do IS NULL AND o.plec = o1.plec );
+  DBMS_OUTPUT.PUT_LINE(z_idOs||' ' ||INITCAP(z_Imie)||' '||INITCAP(z_Nazwisko)||' '||z_plec||' '||z_DataUr||' '||z_pensja||'zl');
+END;
+/
+
+--zad2
+--napisać kod bloku anonimowego pl/sql za pomocą którego będzie można wyswietlic dane najmłodszego kierownika w następujący sposób 
+--Kowalski Jan jest najmłodczym kierownikiem zatrudnionym na wydziale matematyka
+
+
+DECLARE
+  z_Imie osoby.imie1%TYPE;
+  z_Nazwisko osoby.nazwisko%TYPE;
+  z_idOs  osoby.id_os%TYPE;
+  z_wydzial wydzialy.nazwa%TYPE;
+BEGIN
+  SELECT o.imie1, o.nazwisko, w.nazwa --można tutaj dodać INITCAP
+  INTO z_Imie, z_Nazwisko, z_wydzial
+  FROM osoby o join kierownicy kk ON o.id_os=kk.id_os join wydzialy w ON kk.id_w=w.id_w 
+  WHERE kk.do IS NULL AND o.d_ur=(SELECT max(o1.d_ur)
+                           FROM osoby o1 join kierownicy kk1 ON o1.id_os=kk1.id_os
+                           WHERE kk.do IS NULL );
+  DBMS_OUTPUT.PUT_LINE(INITCAP(z_Nazwisko)||' '||INITCAP(z_Imie)||' jest najmlodszym kierownikiem zatrudnionym na wydziale '||INITCAP(z_wydzial)||'.');
+END;
+/
+
+--zad3
+--napisać kod bloku anonimowego pl/sql za pomocą którego będzie mozna wyświetlić nazwe wydziału 
+--na którym aktualnie jest zatrunione najwięcej osób urodzonych w kwartale 4
+
+ CREATE VIEW v_zatr_osoby_lb as
+ (
+ SELECT INITCAP(w.nazwa) AS wydzial, COUNT(o.id_os) as lbOsob
+ FROM osoby o join zatrudnienia z on o.id_os=z.id_os join wydzialy w on z.id_w=w.id_w
+ WHERE z.do IS NULL AND TO_CHAR(o.d_ur, 'q')='4'
+ group by w.nazwa
+ );
+ 
+DECLARE
+  z_wydzial wydzialy.nazwa%TYPE;
+BEGIN
+  SELECT  wydzial
+  INTO z_wydzial
+  FROM v_zatr_osoby_lb 
+  WHERE lbOsob = (SELECT MAX(lbOsob)
+                  FROM v_zatr_osoby_lb );
+  DBMS_OUTPUT.PUT_LINE('Najwiecej obecnie zatrudnionych osobym jest na wydziale: '||z_wydzial);
+END;
+/
