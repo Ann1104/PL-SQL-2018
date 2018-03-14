@@ -1,0 +1,142 @@
+zad1
+zdefiniowac typ rekordowy przeznaczony do przechowywania nastepujacych informacji o osobach: id, nazwisko, imiona, data urodzenia i plec
+przy czym typ rekordowy zdefiniowaæ
+a)w sposob jawny
+b) w sposob niejawny
+
+nastepnie przy jego wykorzystaniu wyswietlic dane osoby z tabeli osoby, której id jest dane poprzez zainicjowanie 
+odpowiedniejzmiennej pl/sql-owej seksji deklaracji
+
+set SERVEROUTPUT ON;
+
+a)
+DECLARE
+  TYPE tr_dane_osobowe IS RECORD(
+    p_id osoby.id_os%TYPE, --p od pole
+    p_nazwisko osoby.nazwisko%TYPE, --%TYPE - deklaracja zakotwiczona
+    p_imie1 osoby.imie1%TYPE,
+    p_imie2 osoby.imie2%TYPE,
+    p_d_ur osoby.d_ur%TYPE,
+    p_plec osoby.plec%TYPE
+    );
+  zr_osoba tr_dane_osobowe;
+  z_id osoby.id_os%TYPE := 22;
+BEGIN
+  
+  select id_os, nazwisko, imie1, imie2, d_ur, plec
+  into zr_osoba
+  from osoby
+  where id_os=z_id;
+  
+  DBMS_OUTPUT.PUT_LINE(zr_osoba.p_id||' '||zr_osoba.p_nazwisko||' '||zr_osoba.p_imie1||' '||zr_osoba.p_imie2||' '||zr_osoba.p_d_ur||' '||zr_osoba.p_plec);
+END;
+/
+
+b)
+DECLARE
+ zr_osoba osoby%ROWTYPE;
+ z_id osoby.id_os%TYPE := 22;
+BEGIN
+  
+  select id_os, nazwisko, imie1, imie2, d_ur, plec
+  into zr_osoba
+  from osoby
+  where id_os=z_id;
+  
+  DBMS_OUTPUT.PUT_LINE(zr_osoba.id_os||' '||zr_osoba.nazwisko||' '||zr_osoba.imie1||' '||zr_osoba.imie2||' '||zr_osoba.d_ur||' '||zr_osoba.plec);
+END;
+/
+
+
+
+
+zad2
+Zdefiniowac dwa typy rekordowe: t_osoba1, t_osoba2 sk³adaj¹cem sie z nastepuj¹cychpól p_id_os, p_nazwisko, p_imie1, p_d_ur. 
+Nastêpnie zadeklarowaæ po dwie zmienne dla ka¿dego z typów: r_osoba11, r_osoba12    r_osoba21, r_osoba22.
+Do r_osoba11 przypisaæ nasepuj¹ce dane (1.'Kowalska','Maria',05/05/1990). wykonac operacje przypisania pozosta³ym zmiennym rekordowym
+za pomoc¹ ró¿nych sposobów przypisywania wartoœci rekordów. 
+
+
+DECLARE
+  TYPE t_osoba1 IS RECORD(
+    p_id_os osoby.id_os%TYPE, 
+    p_nazwisko osoby.nazwisko%TYPE, 
+    p_imie1 osoby.imie1%TYPE,
+    p_d_ur osoby.d_ur%TYPE
+    );
+    
+  TYPE t_osoba2 IS RECORD(
+    p_id_os osoby.id_os%TYPE, 
+    p_nazwisko osoby.nazwisko%TYPE, 
+    p_imie1 osoby.imie1%TYPE,
+    p_d_ur osoby.d_ur%TYPE
+    );
+    
+  r_osoba11 t_osoba1;
+  r_osoba12  t_osoba1; --dwoma sposobami jak siê da
+  
+  r_osoba21 t_osoba2; --jeden sposob
+  r_osoba22 t_osoba2; --jeden sposob
+  
+BEGIN
+  r_osoba11.p_id_os := 1;
+  r_osoba11.p_nazwisko := 'Kowalska';
+  r_osoba11.p_imie1 := 'Maria';
+  r_osoba11.p_d_ur := TO_DATE('05/05/1990', 'dd/mm/yyyy');
+  
+  -- t1   przypisanie rekord po rekordzie
+  r_osoba12.p_id_os := r_osoba11.p_id_os;
+  r_osoba12.p_nazwisko := r_osoba11.p_nazwisko;
+  r_osoba12.p_imie1 := r_osoba11.p_imie1;
+  r_osoba12.p_d_ur := r_osoba11.p_d_ur;
+
+  -- t1  przypisanie calej zmiennej
+ -- r_osoba12 := r_osoba_11;   --nie da sie (przypisanie agregujace) nie s¹ kompatybilne
+
+
+    -- t2   przypisanie rekord po rekordzie
+  r_osoba21.p_id_os := r_osoba11.p_id_os;
+  r_osoba21.p_nazwisko := r_osoba11.p_nazwisko;
+  r_osoba21.p_imie1 := r_osoba11.p_imie1;
+  r_osoba21.p_d_ur := r_osoba11.p_d_ur;
+
+
+  -- t2  przypisanie calej zmiennej
+ -- r_osoba22 := r_osoba11; --nie da sie
+ 
+END;
+/
+
+
+
+
+zad3
+za pomoc¹ zmiennej rekordowej o typie zr_osoba(pierwsze zadanie) wprowadzic do tabelki osoby nastepujace dane : (31, 'Pawlowska', 'Marta' 23/05/1982, 'K'
+operacje zatwierdzic w swposob jawny
+
+DECLARE
+  TYPE tr_dane_osobowe IS RECORD(
+    p_id osoby.id_os%TYPE, 
+    p_nazwisko osoby.nazwisko%TYPE, 
+    p_imie1 osoby.imie1%TYPE,
+    p_imie2 osoby.imie2%TYPE,
+    p_d_ur osoby.d_ur%TYPE,
+    p_plec osoby.plec%TYPE
+    );
+  zr_osoba tr_dane_osobowe;
+BEGIN
+  
+  zr_osoba.p_id := 31;
+  zr_osoba.p_nazwisko := 'Pawlowska';
+  zr_osoba.p_imie1 := 'Marta';
+  zr_osoba.p_imie2 := null;
+  zr_osoba.p_d_ur := to_date('23/05/1982','dd/mm/yyyy');
+  zr_osoba.p_plec := 'K';
+  
+  INSERT INTO osoby VALUES zr_osoba;
+
+COMMIT; -- zatwierdzenie jawne
+
+END;
+/
+
