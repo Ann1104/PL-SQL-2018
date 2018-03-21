@@ -1,0 +1,198 @@
+zad1
+za pomoca zmienniej rekordowej dokonac korekty blednych danych wstawionych do tabeli osoby
+NAZWISKO: Pawlowska
+IMIE : Marta
+dataUR: 18/05/1992
+
+DECLARE
+  TYPE tr_dane_osobowe IS RECORD(
+    p_id osoby.id_os%TYPE, 
+    p_nazwisko osoby.nazwisko%TYPE, 
+    p_imie1 osoby.imie1%TYPE,
+    p_imie2 osoby.imie2%TYPE,
+    p_d_ur osoby.d_ur%TYPE,
+    p_plec osoby.plec%TYPE
+    );
+    --lub r_dane osoby%ROWTYPE;
+  zr_osoba tr_dane_osobowe;
+BEGIN
+  -- r_dane.id_os := 31; 
+  zr_osoba.p_id := 31;
+  zr_osoba.p_nazwisko := 'Palczewska';
+  zr_osoba.p_imie1 := 'Marta';
+  zr_osoba.p_d_ur := to_date('18/05/1992','dd/mm/yyyy');
+  zr_osoba.p_plec := 'K';
+  
+--UPDATE osoby set imie1=zr_osoba.p_imie1, nazwisko=zr_osoba.p_nazwisko, d_ur=zr_osoba.p_d_ur where id_os=zr_osoba.p_id;
+UPDATE osoby SET ROW = zr_osoba WHERE id_os = zr_osoba.p_id;
+
+COMMIT; -- zatwierdzenie jawne
+
+END;
+/
+
+zad 2
+zadeklarowac podtym uzytkownika a nastepnie dwie zmienne tego podtypu za pomoca 
+ktorych bedzie mozna wyswietlic inicjaly osoby ktorej id jest dane poprzez zainicjowanie zmiennej pl/sqlowej 
+osoba Jan Lis ma inicja³y J.L.
+
+-- wywala blad
+
+DECLARE
+SUBTYPE t_dane IS CHAR(1);
+
+z_inicjal1 st_dane;
+z_inicjal2 st_dane;
+z_imie osoby.imie1%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+z_id osoby.id_os%TYPE := 1;
+BEGIN
+
+select TO_UPPER(SUBSTR(imie1,1,1)), TO_UPPER(SUBSTR(nazwisko,1,1)), INITCAP(imie1), INITCAP(nazwisko)
+INTO z_inicjal1, z_inicjal2, z_imie1, z_nazwisko
+FROM osoby
+WHERE id_os = z_id;
+
+DBMS_OUTPUT.PUT_LINE('Osoba'|| z_imie||' '||z_nazwisko||' ma inicjaly: '|| z_inicjal1 || '. ' ||  z_inicjal2 || '. ');
+
+END;
+/
+
+
+-- to tez nie dziala
+
+DECLARE
+SUBTYPE t_dane IS CHAR(1);
+
+z_inicjal1 st_dane;
+z_inicjal2 st_dane;
+z_imie osoby.imie1%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+z_id osoby.id_os%TYPE := 1;
+BEGIN
+
+select SUBSTR(INITCAP(imie1),1,1), SUBSTR(INITCAP(nazwisko),1,1), INITCAP(imie1), INITCAP(nazwisko)
+INTO z_inicjal1, z_inicjal2, z_imie, z_nazwisko
+FROM osoby
+WHERE id_os = z_id;
+
+DBMS_OUTPUT.PUT_LINE('Osoba'|| z_imie||' '||z_nazwisko||' ma inicjaly: '|| z_inicjal1 || '. ' ||  z_inicjal2 || '. ');
+
+END;
+/
+
+
+zad3
+napisac kod bloku anonimowego pl/sql za pomoca ktorego dla danej osoby z tabelki osoby ktorej id jest dane poprzez zainicjowanie zmiennej w sekcji deklaracji
+bedzie wyswietlony odpowiedni komunikat dotyczacy sumy dlugosci jej nazwiska i imienia 
+gdy ta dlugosc jest 
+nie wieksza niz 10 - osoba o malej sumie dlugosci nazwiska i imienia
+11-20 osoba o duzej sumie dlugosci nazwiska i imienia
+powyzej 20 osoba o bardzo duzej sumie dlugosci nazwiska i imienia
+
+DECLARE
+z_id osoby.id_os%TYPE := 31;
+z_dlugosc int;
+z_imie osoby.imie1%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+
+BEGIN
+select INITCAP(imie1), INITCAP(nazwisko), LENGTH(imie1)+LENGTH(nazwisko)
+into z_imie, z_nazwisko, z_dlugosc
+from osoby
+where id_os = z_id;
+
+IF z_dlugosc <=10 THEN
+  DBMS_OUTPUT.PUT_LINE(z_imie||' '||z_nazwisko||' - osoba o malej sumie dlugosci nazwiska i imienia ');
+ELSIF z_dlugosc >11 and z_dlugosc < 20 THEN
+  DBMS_OUTPUT.PUT_LINE(z_imie||' '||z_nazwisko||' - osoba o duzej sumie dlugosci nazwiska i imienia ');
+ELSIF z_dlugosc >20 THEN
+  DBMS_OUTPUT.PUT_LINE(z_imie||' '||z_nazwisko||' - osoba o bardzo duzej sumie dlugosci nazwiska i imienia ');
+ELSE
+  DBMS_OUTPUT.PUT_LINE('BRAK OSOBY W BAZIE');
+END IF;
+
+END;
+/
+
+
+zad4
+Napisac program z wykorzystaniem bloku anonimowego pl/sql ktory bedzie podawaldla wybranej osoby ktorej id w zmiennej w seksji deklaracji
+nastepujacy komunikat: Jan Lis jest osoba urodzona w lipcu. Zastosowac instrukcje case sprawdzajaca 
+
+
+DECLARE
+z_id osoby.id_os%TYPE := 1;
+z_miesiac_urodzenia char(2);
+z_miesiac_slownie varchar2(15);
+z_imie osoby.imie1%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+
+BEGIN
+select INITCAP(imie1), INITCAP(nazwisko), TO_CHAR(d_ur, 'MM')
+into z_imie, z_nazwisko, z_miesiac_urodzenia
+from osoby
+where id_os = z_id;
+
+CASE z_miesiac_urodzenia
+WHEN '01' THEN z_miesiac_slownie:='w styczniu';
+WHEN '02' THEN z_miesiac_slownie:='w lutym';
+WHEN '03' THEN z_miesiac_slownie:='w marcu';
+WHEN '04' THEN z_miesiac_slownie:='w kwietniu';
+WHEN '05' THEN z_miesiac_slownie:='w maju';
+WHEN '06' THEN z_miesiac_slownie:='w czerwcu';
+WHEN '07' THEN z_miesiac_slownie:='w lipcu';
+WHEN '08' THEN z_miesiac_slownie:='w sierpniu';
+WHEN '09' THEN z_miesiac_slownie:='we wrzesniu';
+WHEN '10' THEN z_miesiac_slownie:='w pazdzierniku';
+WHEN '11' THEN z_miesiac_slownie:='w listopadzie';
+WHEN '12' THEN z_miesiac_slownie:='w grudniu';
+END CASE;
+
+DBMS_OUTPUT.PUT_LINE(z_imie||' '||z_nazwisko||' jest osoba urodzona '||z_miesiac_slownie);
+
+END;
+/
+
+zad 5
+za pomoca bloku anonimowego dla aktualnie zatrudnionej osoby ktorej id zostalo zainicjowane.. wyswietlic komunikat dotyczacy
+jej aktualnej pensji :  jesli ta pencja jest <1000 grupa pierwsza zaszeregowania 
+1001-1400 grupa 2
+1401-1700 grupa3
+1700 - 2000 grupa4
+2501 - 3000 grupa 5
+--po500
+powyzej 6000 
+
+osoba o id=1 i pensji 2750 nalezy do grupy 5 wynagrodzen
+zastosowac case
+
+
+
+DECLARE
+z_id osoby.id_os%TYPE := 3; --osoba o id=1 : NO DATA FOUND (obsluzyc wyjatek, bedzie po swietach )
+z_pensja zatrudnienia.pensja%TYPE;
+z_grupa varchar2(5);
+
+BEGIN
+select zat.pensja
+into z_pensja
+from osoby o join zatrudnienia zat on o.id_os=zat.id_os
+where zat.do is null and o.id_os=z_id;
+
+CASE 
+when z_pensja<=1000 THEN z_grupa:='I';
+when z_pensja>=1001 and z_pensja<=1400 THEN z_grupa:='II'; --BETWEEN ..  and ...
+when z_pensja>=1401 and z_pensja<=1700 THEN z_grupa:='III';
+when z_pensja>=1701 and z_pensja<=2000 THEN z_grupa:='IV';
+when z_pensja>=2501 and z_pensja<=3000 THEN z_grupa:='V';
+when z_pensja>=3501 and z_pensja<=4000 THEN z_grupa:='VI';
+when z_pensja>=4001 and z_pensja<=4500 THEN z_grupa:='VII';
+when z_pensja>=4501 and z_pensja<=5000 THEN z_grupa:='VIII';
+when z_pensja>=5501 and z_pensja<=6000 THEN z_grupa:='IX';
+when z_pensja>=6001 THEN z_grupa:='X';
+END CASE;
+
+  DBMS_OUTPUT.PUT_LINE(' Osoba o id = '||z_id||' i pensji '||z_pensja||' nalezy do grupy '||z_grupa||' wynagrodzenia');
+END;
+/
