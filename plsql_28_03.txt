@@ -1,0 +1,9 @@
+28.03.2018
+zad1
+kod bloku anonimowego w jezyku pl/sql który by dla ka¿dej osoby z tabeli osoby wyswietli nastepuj¹cy komunikat:
+1. Duda Barbara ma inicja³y D.B.
+2. Krawczyk Adam ma inicja³y K.A.
+a)wykorzystaæ pêtlê prost¹
+b)pêdle WHILE
+u¿yæ kursor niejawny
+
