@@ -7,3 +7,121 @@ a)wykorzystaæ pêtlê prost¹
 b)pêdle WHILE
 u¿yæ kursor niejawny
 
+c)pêtla prosta kursorem jawnym
+d)pêdla for kursora
+
+a)
+
+DECLARE
+z_inicjal_imie CHAR(1);
+z_inicjal_nazwisko CHAR(1);
+z_imie osoby.imie1%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+z_licznik BINARY_INTEGER :=1;
+z_id osoby.id_os%TYPE;
+z_max_petla INTEGER;
+
+BEGIN
+
+select count(*) --id_os
+into z_max_petla
+from osoby;
+
+LOOP
+  select id_os, SUBSTR(INITCAP(imie1),1,1), SUBSTR(INITCAP(nazwisko),1,1), INITCAP(imie1), INITCAP(nazwisko)
+  INTO z_id, z_inicjal_imie, z_inicjal_nazwisko, z_imie, z_nazwisko
+  FROM osoby
+  WHERE id_os = z_licznik;
+  DBMS_OUTPUT.PUT_LINE(z_licznik||'. '||z_nazwisko||' '||z_imie||' ma inicjaly '|| z_inicjal_nazwisko || '.' ||  z_inicjal_imie || '. ');
+  z_licznik := z_licznik+1;
+  EXIT WHEN z_licznik > z_max_petla;
+END LOOP;
+
+END;
+/
+
+
+b)
+DECLARE
+z_inicjal_imie CHAR(1);
+z_inicjal_nazwisko CHAR(1);
+z_imie osoby.imie1%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+z_licznik BINARY_INTEGER :=1;
+z_id osoby.id_os%TYPE;
+z_max_petla INTEGER;
+
+BEGIN
+
+select count(*) ==id_os
+into z_max_petla
+from osoby;
+
+while z_licznik <= z_max_petla LOOP
+  select id_os, SUBSTR(INITCAP(imie1),1,1), SUBSTR(INITCAP(nazwisko),1,1), INITCAP(imie1), INITCAP(nazwisko)
+  INTO z_id, z_inicjal_imie, z_inicjal_nazwisko, z_imie, z_nazwisko
+  FROM osoby
+  WHERE id_os = z_licznik;
+  DBMS_OUTPUT.PUT_LINE(z_licznik||'. '||z_nazwisko||' '||z_imie||' ma inicjaly '|| z_inicjal_nazwisko || '.' ||  z_inicjal_imie || '. ');
+  z_licznik := z_licznik+1;
+END LOOP;
+
+END;
+/
+
+c)pêtla prosta kursorem jawnym
+
+DECLARE
+z_inicjal_imie CHAR(1);
+z_inicjal_nazwisko CHAR(1);
+z_imie osoby.imie1%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+z_licznik BINARY_INTEGER :=1;
+z_id osoby.id_os%TYPE;
+z_max_petla INTEGER;
+
+CURSOR k_osoby IS
+  select id_os, SUBSTR(INITCAP(imie1),1,1), SUBSTR(INITCAP(nazwisko),1,1), INITCAP(imie1), INITCAP(nazwisko)
+  FROM osoby;
+  
+BEGIN
+
+OPEN k_osoby;
+FETCH k_osoby INTO z_id, z_inicjal_imie, z_inicjal_nazwisko, z_imie, z_nazwisko;
+
+WHILE k_osoby%FOUND LOOP
+DBMS_OUTPUT.PUT_LINE(z_licznik||'. '||z_nazwisko||' '||z_imie||' ma inicjaly '|| z_inicjal_nazwisko || '.' ||  z_inicjal_imie || '. ');
+z_licznik := z_licznik+1;
+FETCH k_osoby INTO z_id, z_inicjal_imie, z_inicjal_nazwisko, z_imie, z_nazwisko;
+END LOOP;
+
+CLOSE k_osoby;
+
+END;
+/
+
+d)pêdla for kursora -- nie dzia³a
+DECLARE
+z_inicjal_imie CHAR(1);
+z_inicjal_nazwisko CHAR(1);
+z_imie osoby.imie1%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+z_licznik BINARY_INTEGER :=1;
+z_id osoby.id_os%TYPE;
+z_max_petla INTEGER;
+
+CURSOR k_osoby IS
+  select id_os, SUBSTR(INITCAP(imie1),1,1), SUBSTR(INITCAP(nazwisko),1,1), INITCAP(imie1), INITCAP(nazwisko)
+  FROM osoby;
+  
+BEGIN
+
+OPEN k_osoby;
+FOR z_osoba IN k_osoby LOOP
+DBMS_OUTPUT.PUT_LINE(z_licznik||'. '||z_nazwisko||' '||z_imie||' ma inicjaly '|| z_inicjal_nazwisko || '.' ||  z_inicjal_imie || '. ');
+z_licznik := z_licznik+1;
+END LOOP;
+CLOSE k_osoby;
+
+END;
+/
