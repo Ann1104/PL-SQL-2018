@@ -1,0 +1,123 @@
+4-04-2018
+
+zad 1
+napisac kod niejawny w pl/sql z kursorem jawnym (od teraz zawsze) umo¿liwiaj¹cy wyœwietlenie dla poszczególnych wydzia³ów
+i poszczególnych liter alfabetu liczby osób aktualnie zatrudnionych, których imie ropzpoczyna sie na dana literê
+Wydzia³ Matematyka litera A - 5
+
+set SERVEROUTPUT ON;
+
+a) z pêtl¹ prost¹
+
+DECLARE
+z_wydzial wydzialy.nazwa%TYPE;
+z_litera CHAR(1);
+z_liczba INTEGER;
+z_licznik INTEGER:=1;
+CURSOR k_pracownicy_litera IS
+  SELECT INITCAP(w.nazwa) wydzial, SUBSTR(INITCAP(o.imie1),1,1) litera_imienia, COUNT(o.id_os) lb_osob
+  FROM osoby o join zatrudnienia z on o.id_os = z.id_os join wydzialy w on w.id_w=z.id_w
+  WHERE z.do IS NULL
+  group by INITCAP(w.nazwa), SUBSTR(INITCAP(o.imie1),1,1);
+  
+BEGIN
+
+OPEN k_pracownicy_litera;
+LOOP
+FETCH k_pracownicy_litera INTO z_wydzial, z_litera, z_liczba;
+EXIT WHEN k_pracownicy_litera%NOTFOUND;
+DBMS_OUTPUT.PUT_LINE(z_licznik||' Wydzial '||z_wydzial||' litera '||z_litera||' liczba osob: '||z_liczba);
+z_licznik := z_licznik+1;
+
+END LOOP;
+CLOSE k_pracownicy_litera;
+
+END;
+/
+
+
+b) z pêtl¹ WHILE
+
+DECLARE
+z_wydzial wydzialy.nazwa%TYPE;
+z_litera CHAR(1);
+z_liczba INTEGER;
+z_licznik INTEGER:=1;
+CURSOR k_pracownicy_litera IS
+  SELECT INITCAP(w.nazwa) wydzial, SUBSTR(INITCAP(o.imie1),1,1) litera_imienia, COUNT(o.id_os) lb_osob
+  FROM osoby o join zatrudnienia z on o.id_os = z.id_os join wydzialy w on w.id_w=z.id_w
+  WHERE z.do IS NULL
+  group by INITCAP(w.nazwa), SUBSTR(INITCAP(o.imie1),1,1);
+  
+BEGIN
+
+OPEN k_pracownicy_litera;
+FETCH k_pracownicy_litera INTO z_wydzial, z_litera, z_liczba;
+
+WHILE k_pracownicy_litera%FOUND LOOP
+DBMS_OUTPUT.PUT_LINE(z_licznik||' Wydzial '||z_wydzial||' litera '||z_litera||' liczba osob: '||z_liczba);
+FETCH k_pracownicy_litera INTO z_wydzial, z_litera, z_liczba;
+z_licznik := z_licznik+1;
+END LOOP;
+
+CLOSE k_pracownicy_litera;
+
+END;
+/
+
+
+
+c)pêtla for kursora
+
+DECLARE
+z_licznik INTEGER:=1;
+
+CURSOR k_pracownicy_litera IS
+  SELECT INITCAP(w.nazwa) wydzial, SUBSTR(INITCAP(o.imie1),1,1) litera_imienia, COUNT(o.id_os) lb_osob
+  FROM osoby o join zatrudnienia z on o.id_os = z.id_os join wydzialy w on w.id_w=z.id_w
+  WHERE z.do IS NULL
+  group by INITCAP(w.nazwa), SUBSTR(INITCAP(o.imie1),1,1);
+  
+BEGIN
+
+
+FOR z_dane IN k_pracownicy_litera LOOP --z_dane to pseudo rekord
+DBMS_OUTPUT.PUT_LINE(z_licznik||' Wydzial '||z_dane.wydzial||' litera '||z_dane.litera_imienia||' liczba osob: '||z_dane.lb_osob);
+z_licznik := z_licznik+1;
+END LOOP;
+
+END;
+/
+
+zad 2  --- mo¿e byc na sprawdzianie z wiêksz¹ komend¹
+utworzyc tabele osoby_short o polach: nazwa, id_os, nazwisko, imie1, imie2, plec, od
+zaprojektowac blok niejawyny... umozliwiaj¹cy wprowadzenie danych do tabeli osoby_short tych osob ktore zostaly najpozniej 
+zatrudnione na kazdym z wydzia³ów
+
+
+create table osoby_short(
+nazwa VARCHAR2(15 BYTE),
+id_os NUMBER(4,0), 
+nazwisko VARCHAR2(15 BYTE), 
+imie1 VARCHAR2(15 BYTE), 
+imie2 VARCHAR2(15 BYTE), 
+plec CHAR(1 BYTE), 
+od DATE
+);
+
+
+DECLARE
+CURSOR k_insert_osoby_short IS
+  SELECT INITCAP(w.nazwa) wydzial, o.id_os, INITCAP(o.nazwisko) nazw, INITCAP(o.imie1) im1, INITCAP(o.imie2) im2, o.plec , z.od
+  FROM wydzialy w join zatrudnienia z on z.id_w=w.id_w join osoby o on z.id_os=o.id_os
+  WHERE z.od=(SELECT max(z1.od)
+                           FROM zatrudnienia z1 join wydzialy w1 on z1.id_w=w1.id_w
+                           WHERE  w1.id_w = w.id_w);
+BEGIN
+
+FOR z_dane IN k_insert_osoby_short LOOP 
+INSERT INTO osoby_short VALUES(z_dane.wydzial, z_dane.id_os, z_dane.nazw, z_dane.im1, z_dane.im2, z_dane.plec, z_dane.od);
+END LOOP;
+
+END;
+/
