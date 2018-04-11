@@ -1,0 +1,146 @@
+zaj 11.04.2018
+
+zad1
+zaprojektowaæ skrypt bloku anonimowego pl/sql umozliwiaj¹cy wyœwietlenie dla poszczególnych wydzia³ów komunikatów
+kierownikiem wydzia³u Matematyki jest krawczyk Adam
+
+DECLARE
+CURSOR k_wydzial_kierownicy IS
+  SELECT INITCAP(w.nazwa) wydzial, INITCAP(o.imie1) im, INITCAP(o.nazwisko) nazw
+  FROM osoby o join kierownicy k on k.id_os=o.id_os join wydzialy w on w.id_w=k.id_w
+  WHERE k.do IS NULL;
+  
+BEGIN
+
+FOR z_dane IN k_wydzial_kierownicy LOOP
+CASE z_dane.wydzial
+WHEN 'Matematyka' THEN z_dane.wydzial:='Matematyki';
+WHEN 'Fizyka' THEN z_dane.wydzial:='Fizyki';
+WHEN 'Prawo' THEN z_dane.wydzial:='Prawa';
+WHEN 'Ekonomia' THEN z_dane.wydzial:='Ekonomii';
+WHEN 'Filologia' THEN z_dane.wydzial:='Filologi';
+WHEN 'Biologia' THEN z_dane.wydzial:='Biologi';
+
+END CASE;
+DBMS_OUTPUT.PUT_LINE(' Kierownikiem wydzialu '||z_dane.wydzial||' jest '||z_dane.im||' '||z_dane.nazw||'.');
+
+END LOOP;
+
+END;
+/
+
+zad2
+zaprojektowaæ skrypt bloku anonimowego pl/sql za pomoca którego bêdzie wyœwietlana na poszczególnych wydzia³ach lista osób 
+aktualnie zatrudnionychprzy czym ka¿da osoba bêdzie poprzedzona kolejna liczb¹ porz¹dkow¹
+
+
+liczba osób zatrudnionych na wydziale Matematyka
+1.Duda Barbara
+2.Krawczyk Adam
+3.Polañski Marek
+liczba osób zatrudnionych na wydziale Matematyka
+1.Kowalska Maria
+2.Nowak Jerzy
+...
+
+dodatkowo(CURSOR k_pracownicy IS
+  SELECT INITCAP(w.nazwa) wydzial, COUNT(o.id_os) lb_osob
+  FROM osoby o join zatrudnienia z on o.id_os = z.id_os join wydzialy w on w.id_w=z.id_w
+  WHERE z.do IS NULL
+    group by INITCAP(w.nazwa);)
+
+
+DECLARE
+z_licznik INTEGER:=1;
+
+  CURSOR k_wydzial IS
+  SELECT INITCAP(w.nazwa) wydzial
+  FROM wydzialy w
+  ORDER BY w.nazwa;
+  
+  CURSOR k_pracownicy_wydzial IS
+  SELECT INITCAP(w.nazwa) wydzial, INITCAP(o.imie1) im, INITCAP(o.nazwisko) nazw
+  FROM osoby o join zatrudnienia z on o.id_os = z.id_os join wydzialy w on w.id_w=z.id_w
+  WHERE z.do IS NULL
+  ORDER BY w.nazwa, o.nazwisko, o.imie1;
+    
+BEGIN
+
+FOR z_dane IN k_wydzial LOOP
+DBMS_OUTPUT.PUT_LINE('Lista osób zatrudnionych na wydziale '||z_dane.wydzial||':');
+z_licznik:=1;
+  FOR z_dane_pracownika IN k_pracownicy_wydzial LOOP
+    IF z_dane.wydzial=z_dane_pracownika.wydzial THEN
+    DBMS_OUTPUT.PUT_LINE(z_licznik||'. '||z_dane_pracownika.nazw||' ' || z_dane_pracownika.im);
+    z_licznik:=z_licznik+1;
+    END IF;
+  END LOOP;
+DBMS_OUTPUT.PUT_LINE(' ');
+END LOOP;
+
+END;
+/
+
+
+
+zad 3 - nie dzia³a
+zaprojektowaæ skrypt bloku anonimowego pl/sql za pomoca którego bêdzie wyœwietlany rok, miesiac oraz lista osob zatrudniona w tym okresie 
+ma byc wyswietlony rok zatrudnienia-(tutaj podajemy rok), nastepnie miesiac zatrudnienia - tutaj cyfra miesiaca, a nastepnie listya osob zatrudnionych 
+w tym okresie poprzedzona liczba pocz¹tkow¹ z kropk¹
+
+Rok zatrudnienia - 2005
+	 Miesiac zatrudnienia - 6
+		1......
+		2.....
+		...
+	Miesiac zatrudnienia - 10
+		1......
+		2.....
+		...
+Rok zatrudnienia - 2004
+	 Miesiac zatrudnienia - 6
+		1......
+		2.....
+		...
+	Miesiac zatrudnienia - 11
+		1......
+		2.....
+		...
+
+DECLARE
+z_licznik INTEGER:=1;
+
+  CURSOR k_pracownicy IS
+  SELECT INITCAP(o.imie1) im, INITCAP(o.nazwisko) nazw, TO_CHAR(z.od, 'yyyy') rok, TO_CHAR(z.od, 'MM') mies
+  FROM osoby o join zatrudnienia z on o.id_os = z.id_os join wydzialy w on w.id_w=z.id_w
+  ORDER BY z.od, o.nazwisko, o.imie1;
+  
+  CURSOR k_rok IS
+  SELECT distinct TO_CHAR(z.od, 'yyyy') rok
+  FROM zatrudnienia z 
+  ORDER BY z.od DESC;
+   CURSOR k_miesiac IS
+   
+  SELECT distinct TO_CHAR(z.od, 'MM') mies
+  FROM zatrudnienia z 
+  ORDER BY z.od ASC;
+   
+BEGIN
+
+FOR z_rok IN k_rok LOOP
+DBMS_OUTPUT.PUT_LINE('Rok zatrudnienia - '||z_rok.rok);
+  FOR z_miesiac IN k_miesiac LOOP
+      DBMS_OUTPUT.PUT_LINE('  Miesiac zatrudnienia - '||z_miesiac.mies);
+      z_licznik:=1;
+        FOR z_pracownicy IN k_pracownicy LOOP
+          IF z_rok.rok=z_pracownicy.rok AND z_miesiac.mies=z_pracownicy.mies THEN
+          DBMS_OUTPUT.PUT_LINE('    '||z_licznik||'. '||z_pracownicy.nazw||' ' || z_pracownicy.im);
+          z_licznik:=z_licznik+1;
+          END IF;
+        END LOOP;
+  END LOOP;
+DBMS_OUTPUT.PUT_LINE(' ');
+END LOOP;
+
+END;
+/
