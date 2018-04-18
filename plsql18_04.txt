@@ -1,0 +1,171 @@
+zaj 18.04
+
+zad 1
+Napisac kod bloku anonimowego PL/SQL, w którym
+a) zostanie pobrany , a nastepnie wydrukowany ROWID przyk³adowego rekordu danych wstawionego do tabeli osoby
+		31 Tomczyk Monika 21/01/1987 K
+b) powy¿szy ROWID zostanie wykorzystany do aktualizacji powy¿szej daty do daty 12/01/1987, przy czym z aktualnego 
+rekordu zostana pobrane, a nastepnie wydrukowane id_os, nazwisko, imie1 osoby, której d_ur zosta³a zaktualizowana
+c) powy¿szy ROWID zostanie wykorzystany do usuniêcia rekordu, przy czym zostanie pobrane i wydrukowane id_os 
+i d_ur usuwanej osoby
+
+
+set SERVEROUTPUT ON
+
+DECLARE
+z_nowyRowid ROWID;
+z_id osoby.id_os%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+z_imie1 osoby.imie1%TYPE;
+z_d_ur osoby.d_ur%TYPE;
+BEGIN
+INSERT INTO osoby VALUES(31, 'Tomczyk', 'Monika', null, TO_DATE('21/01/1987','dd/mm/yyyy'),'K') RETURNING rowid INTO z_nowyRowid;
+DBMS_OUTPUT.PUT_LINE('ROWID: '|| z_nowyRowid);
+
+UPDATE osoby SET d_ur =  TO_DATE('12/01/1987','dd/mm/yyyy') WHERE rowid = z_nowyRowid 
+RETURNING id_os, nazwisko, imie1, d_ur INTO z_id, z_nazwisko, z_imie1, z_d_ur;
+DBMS_OUTPUT.PUT_LINE('UPDATE OSOBY: '|| z_id||' '||z_nazwisko||' '||z_imie1);
+
+DELETE FROM osoby WHERE rowid=z_nowyRowid;
+DBMS_OUTPUT.PUT_LINE('DELETE OSOBY: '|| z_id||' '||z_d_ur);
+
+END;
+/
+
+zad 2
+Napisac kod bloku anonimowego PL/SQL z kursorem jawnym z blokad¹ , którego zadaniem jest podniesienie
+aktualnej pensji wszystkim aktualnie zatrudnionym kobietom o 10%. Operacje w sposób jawny zatwierdziæ
+
+
+DECLARE 
+z_zmiana NUMBER:=1.1;
+
+CURSOR k_kobietyPensjaPlus IS
+SELECT o.id_os, z.pensja 
+FROM zatrudnienia z join osoby o on z.id_os=o.id_os
+WHERE o.plec='K' and z.do IS NULL
+FOR UPDATE OF pensja;
+
+BEGIN
+
+ FOR z_dane IN k_kobietyPensjaPlus LOOP
+ DBMS_OUTPUT.PUT_LINE(z_dane.id_os||' '||z_dane.pensja) ;
+ END LOOP;
+ 
+  FOR z_dane IN k_kobietyPensjaPlus LOOP
+    UPDATE zatrudnienia
+    SET pensja = pensja*z_zmiana 
+    WHERE CURRENT OF k_kobietyPensjaPlus;
+  END LOOP;
+  COMMIT;
+
+END;
+
+
+
+zad 3 
+Napisac kod bloku anonimowego PL/SQL z kursorem jawnym z blokad¹ , którego zadaniem jest podniesienie 
+aktualnej pensji wszystkim aktualnie zatrudnionym osobom przy czym w puli na podniesienie pensji mamy 10 000 z³
+Zrobiæ wydruk przed i po podniesieniu pensji
+
+
+DECLARE 
+z_zmiana NUMBER:=10000;
+z_oIleZmiana NUMBER:=0;
+z_licznik NUMBER:=1;
+z_ileOsob NUMBER:=0;
+
+CURSOR k_PensjaPlus IS
+SELECT o.id_os, z.pensja 
+FROM zatrudnienia z join osoby o on z.id_os=o.id_os
+WHERE z.do IS NULL
+FOR UPDATE OF pensja;
+
+BEGIN
+DBMS_OUTPUT.PUT_LINE(' PRZED ');
+ FOR z_dane IN k_PensjaPlus LOOP
+ DBMS_OUTPUT.PUT_LINE(z_licznik||' '|| z_dane.id_os||' '||z_dane.pensja);
+ z_ileOsob:=z_licznik;
+ z_licznik:=z_licznik+1;
+ END LOOP;
+ 
+ z_oIleZmiana:=z_zmiana/z_ileOsob;
+ z_licznik:=1;
+ 
+  DBMS_OUTPUT.PUT_LINE(' ');
+ DBMS_OUTPUT.PUT_LINE(' PO ');
+ 
+  FOR z_dane IN k_PensjaPlus LOOP
+    UPDATE zatrudnienia
+    SET pensja = pensja+z_oIleZmiana
+    WHERE CURRENT OF k_PensjaPlus;
+
+  END LOOP;
+  COMMIT;
+
+DBMS_OUTPUT.PUT_LINE(' PRZED ');
+ FOR z_dane IN k_PensjaPlus LOOP
+ DBMS_OUTPUT.PUT_LINE(z_licznik||' '|| z_dane.id_os||' '||z_dane.pensja);
+  z_ileOsob:=z_licznik;
+  z_licznik:=z_licznik+1;
+
+ END LOOP;
+ 
+ 
+END;
+/
+
+
+--do zliczania liczby osob
+SELECT COUNT(id_os)
+INTO z_ileOsob
+from zatrudnienia
+WHERE do IS NULL;
+
+zad 4
+.... mamy dokonaæ podwy¿ki wszystkim osobom aktualnie pracuj¹cym na danym wydziale (zmienna) 
+ka¿da z tych osób ma dostaæ taka kwote podwy¿ki jaka wynika z okresu jej pracy na danym wydziale - za ka¿dy rok pracy osoba dostaje 
+podwy¿kê 0,5% za ka¿dy aktualnie przepracowany rok
+
+
+DECLARE 
+z_licznik NUMBER:=1;
+z_wydzial wydzialy.nazwa%TYPE:='Matematyka';
+z_zmiana NUMBER:=0.005;
+z_ile NUMBER:=0;
+CURSOR k_PensjaPlus IS
+SELECT  z.pensja, TRUNC(MONTHS_BETWEEN(SYSDATE(), z.od))/12*pensja*z_zmiana AS ilePodwyzki
+FROM zatrudnienia z join wydzialy w on z.id_w = w.id_w
+WHERE z.do IS NULL and INITCAP(w.nazwa)=INITCAP(z_wydzial)
+FOR UPDATE OF pensja;
+
+BEGIN
+DBMS_OUTPUT.PUT_LINE(' PRZED wydzial:' || z_wydzial);
+ FOR z_dane IN k_PensjaPlus LOOP
+ DBMS_OUTPUT.PUT_LINE(z_licznik||' '||z_dane.pensja);
+ z_licznik:=z_licznik+1;
+ END LOOP;
+
+  FOR z_dane IN k_PensjaPlus LOOP
+  z_ile := z_dane.ilePodwyzki;
+    UPDATE zatrudnienia z
+    SET pensja = pensja + z_ile
+    WHERE CURRENT OF k_PensjaPlus;
+  END LOOP;
+  COMMIT;
+
+ z_licznik:=1;
+ 
+  DBMS_OUTPUT.PUT_LINE(' ');
+ DBMS_OUTPUT.PUT_LINE(' PO ');
+ 
+ 
+ FOR z_dane IN k_PensjaPlus LOOP
+ DBMS_OUTPUT.PUT_LINE(z_licznik||' '||z_dane.pensja);
+  z_licznik:=z_licznik+1;
+
+ END LOOP;
+ 
+ 
+END;
+/
