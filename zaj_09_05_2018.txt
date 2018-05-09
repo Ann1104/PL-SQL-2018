@@ -1,0 +1,195 @@
+zaj 9.05.2018  -  wt 19 czerwca
+
+Zad 1
+utworzyc tabelkê bledow sk³adaj¹ca siê z 2 pó³ o nastepuj¹cych nazwach i typach: kod numeryczny, 
+komunikat typu tekstowego o max rozmiarze 200.
+Napisac kod bloku anonimowego, w którym za pomoca kursora niejawnego wyœwietlimy informacje o:
+a)osobie, której id = 50
+b)wszystkich osobach których identyfikator jest mniejszy ni¿ 50
+zaprojektowac obs³uge b³êdów/wyj¹tków za pomoca others w ten sposób, ze do tabeli bledow bêdzie wstawiany kod
+i komunikat o b³êdzie, który zosta³ obs³uzony za pomoca othersa po uruchomieniu tego bloku
+
+set SERVEROUTPUT ON
+
+create table bledy(
+kod NUMBER,
+komunikat VARCHAR2(200)
+)
+
+DECLARE
+z_id osoby.id_os%TYPE:=50;
+z_imie osoby.imie1%TYPE;
+z_nazwisko osoby.nazwisko%TYPE;
+z_kod bledy.kod%TYPE;
+z_komunikat bledy.komunikat%TYPE;
+
+BEGIN
+
+SELECT imie1, nazwisko
+INTO z_imie, z_nazwisko
+FROM osoby
+WHERE id_os<z_id;
+
+EXCEPTION
+  WHEN others THEN
+ z_kod:=SQLCODE;
+ z_komunikat := SUBSTR(SQLERRM, 1, 200);
+ INSERT INTO BLEDY(kod,komunikat) values (z_kod, z_komunikat);
+END;
+/
+
+
+
+
+zad 2
+
+Napisac procedure DodajNowaOsoba, która bêdzie wprowadza³a osobê do tabeli osoby przy czym uwzglêdniæ
+fakt sprawdzenia wprowadzania istniej¹cej juz osoby
+
+
+CREATE OR REPLACE PROCEDURE DodajNowaOsoba(
+  p_id_os osoby.id_os%TYPE,
+  p_nazwisko osoby.nazwisko%TYPE,
+  p_imie1 osoby.imie1%TYPE,
+  p_imie2 osoby.imie2%TYPE,
+  p_d_ur osoby.d_ur%TYPE,
+  p_plec osoby.plec%TYPE) AS
+  
+  z_ile NUMBER;
+BEGIN
+
+SELECT count(id_os)
+INTO z_ile
+FROM osoby
+WHERE id_os=p_id_os; --nazwisko=p_nazwisko and imie1=p_imie1 and imie2=p_imie2 and d_ur=p_d_ur and plec=p_plec;
+
+IF z_ile>0 THEN
+  RAISE_APPLICATION_ERROR(-20001,' Taka osoba znajduje sie ju¿ w bazie!');
+  END IF;
+  
+    INSERT INTO osoby 
+  VALUES (p_id_os, p_nazwisko, p_imie1, p_imie2, p_d_ur, p_plec);
+  COMMIT;
+
+
+END DodajNowaOsoba;
+/
+
+BEGIN
+ DodajNowaOsoba(32,'Karp','Janusz',null,to_date('15/03/1971','dd/mm/yyyy'),'M');
+ END;
+ /
+
+
+
+zad 3
+Utworzyæ procedure i funkcjê dotycz¹c¹ liczby obliczeñ osób o zadanej p³ci. Wywo³uj¹c te ma byæ wyœwietlone
+np:
+Liczba Kobiet = 18
+Liczba mê¿czyzn = 12
+
+
+---------------PROCEDURA---------------------
+
+CREATE OR REPLACE PROCEDURE IleOsobDanejPlci(
+  p_plec osoby.plec%TYPE) AS
+  z_ile NUMBER;
+BEGIN
+
+SELECT count(id_os)
+INTO z_ile
+FROM osoby
+WHERE plec=p_plec;
+
+IF p_plec='K' THEN
+  DBMS_OUTPUT.PUT_LINE('Liczba kobiet = '||z_ile);
+  ELSIF p_plec='M' THEN
+  DBMS_OUTPUT.PUT_LINE('Liczba mezczyzn = '||z_ile);
+  ELSE 
+  RAISE_APPLICATION_ERROR(-20001,'Z£A P£EÆ');
+  END IF;
+
+END IleOsobDanejPlci;
+/
+
+BEGIN 
+IleOsobDanejPlci('M');
+END;
+/
+
+
+---------------FUNKCJA---------------------
+
+CREATE OR REPLACE FUNCTION IleOsobDanejPlciFUNKCJA(
+  p_plec osoby.plec%TYPE) RETURN NUMBER IS
+  z_ile NUMBER;
+BEGIN
+
+SELECT count(id_os)
+INTO z_ile
+FROM osoby
+WHERE plec=p_plec;
+
+IF p_plec='K' THEN
+  RETURN z_ile;
+ELSIF p_plec='M' THEN
+  return z_ile;
+ELSE
+RAISE_APPLICATION_ERROR(-20001,' Z£A P£EÆ!');
+END IF;
+
+END IleOsobDanejPlciFUNKCJA;
+/
+
+
+
+DECLARE 
+z_plec osoby.plec%TYPE := 'Z';
+
+BEGIN 
+
+IF z_plec='K' THEN
+  DBMS_OUTPUT.PUT_LINE('Liczba kobiet = '|| IleOsobDanejPlciFUNKCJA(z_plec));
+  ELSIF z_plec='M' THEN
+  DBMS_OUTPUT.PUT_LINE('Liczba mezczyzn = '|| IleOsobDanejPlciFUNKCJA(z_plec));
+ELSE 
+DBMS_OUTPUT.PUT_LINE('Podano z¹ pleæ');
+  END IF;
+
+END;
+/
+
+
+
+
+zad 4 - nie dzia³a
+mamy zaprojektowac procedure wyswietlania id_os kierownik oraz nazwiska po³¹czonego z imieniem oraz liczbe dni kierowania wydzia³em
+dane osoby która najd³u¿ej pracowa³a na wydziale, przy czym nazwa wydzia³u jest znana
+
+CREATE OR REPLACE PROCEDURE procedura_kierownicy_wydzial(
+  p_nazwa wydzialy.nazwa%TYPE) AS
+  
+  p_id_os osoby.id_os%TYPE;
+  p_nazwisko osoby.nazwisko%TYPE;
+  p_imie1 osoby.imie1%TYPE;
+  
+BEGIN
+
+SELECT o.id_os, o.nazwisko, o.imie1
+INTO p_id_os, p_nazwisko, p_imie1
+FROM osoby o join kierownicy k on o.id_os=k.id_os join wydzialy w on z.id_w=w.id_w 
+WHERE INITCAP(p_nazwa)=INITCAP(w.nazwa) and id_os=(SELECT id_os
+                                                  FROM osoby o1 join kierownicy k1 on o1.id_os=k1.id_os join wydzialy w on z1.id_w=w1.id_w 
+                                                  WHERE NVL(k1.do, sysdate)- k1.od = MAX(NVL(k1.do, sysdate) ));
+
+
+  DBMS_OUTPUT.PUT_LINE('Wydzial '||INITCAP(p_nazwa)||' ' ||p_id_os||' '||p_nazwisko||' '||p_imie1);
+
+
+END procedura_kierownicy_wydzial;
+/
+
+BEGIN 
+procedura_kierownicy_wydzial('Matematyka');
+END;
+/
